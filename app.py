@@ -16,7 +16,7 @@ with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-c
 
 tabtitle = 'DC Properties'
 sourceurl = 'https://plot.ly/python/scattermapbox/'
-githublink = 'https://github.com/austinlasseter/dc-properties-map'
+githublink = 'https://github.com/ktemsupa/dc-properties-map'
 mapbox_access_token = open("assets/mytoken.mapbox_token").read()
 df = pd.read_csv('resources/DC_Properties.csv', index_col='Unnamed: 0')
 df = df.sample(500)
@@ -29,35 +29,34 @@ server = app.server
 app.title=tabtitle
 
 ########## Figure
-fig = go.Figure(go.Scattermapbox(
+def scat_map(value):
+    fig = go.Figure(go.Scattermapbox(
         lat=df['LATITUDE'],
         lon=df['LONGITUDE'],
         mode='markers',
         marker=go.scattermapbox.Marker(
             size=9,
-            colorscale='Reds',
-            color=df['PRICE']
+            colorscale='Viridis',
+            color=df[value]
         ),
         text=df['ASSESSMENT_SUBNBHD']
 
     ))
-
-fig.update_layout(
-    autosize=True,
-    hovermode='closest',
-    mapbox=go.layout.Mapbox(
-        accesstoken=mapbox_access_token,
-        bearing=0,
-        center=go.layout.mapbox.Center(
-            lat=38.92,
-            lon=-77.07
+    fig.update_layout(
+        autosize=True,
+        hovermode='closest',
+        mapbox=go.layout.Mapbox(
+            accesstoken=mapbox_access_token,
+            bearing=0,
+            center=go.layout.mapbox.Center(
+                lat=38.92,
+                lon=-77.07
+            ),
+            pitch=0,
+            zoom=10
         ),
-        pitch=0,
-        zoom=10
-    ),
-)
-
-
+    )
+    return fig
 
 ########### Layout
 
@@ -67,16 +66,16 @@ app.layout = html.Div(children=[
     html.Div(children=[
         # left side
         html.Div([
-                html.H6('Select a variable for colorscale:'),
+                html.H6('Select a Variable for Colorscale:'),
                 dcc.Dropdown(
                     id='stats-drop',
                     options=[{'label': i, 'value': i} for i in varlist],
-                    value='Price'
+                    value='PRICE'
                 ),
         ], className='three columns'),
         # right side
         html.Div([
-            dcc.Graph(id='dc-map', figure=fig)
+            dcc.Graph(id='dc-map', figure = scat_map('PRICE'))
         ], className='nine columns'),
     ], className='twelve columns'),
 
@@ -89,8 +88,10 @@ app.layout = html.Div(children=[
 )
 
 ############ Callbacks
-
-
+@app.callback(Output('dc-map', 'figure'),
+             [Input('stats-drop', 'value')])
+def update_map(value):
+    return scat_map(value)
 
 ############ Deploy
 if __name__ == '__main__':
